@@ -1,0 +1,25 @@
+[workspace]
+name = "liblouis-env"
+version = "0.1.0"
+description = "Cross-platform locator/installer for the liblouis lou_translate binary"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64", "win-64"]
+
+[dependencies]
+python = ">=3.9"
+pip = "*"
+
+[pypi-dependencies]
+liblouis-env = { path = ".", editable = true }
+
+[feature.dev.dependencies]
+pytest = "*"
+ruff = "*"
+
+[environments]
+dev = ["dev"]
+
+[tasks]
+test = "pytest"
+lint = "ruff check ."
+fetch = "liblouis-fetch"

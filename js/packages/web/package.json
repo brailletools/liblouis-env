@@ -4,7 +4,8 @@
   "description": "Versioned locator/fetcher for a liblouis browser (WASM/asm.js) build, for client-side use",
   "type": "module",
   "exports": {
-    ".": "./src/vendor.js"
+    ".": "./src/vendor.js",
+    "./browser": "./src/loadEasyApiAsync.js"
   },
   "bin": {
     "liblouis-fetch-web": "./bin/liblouis-fetch-web.js"

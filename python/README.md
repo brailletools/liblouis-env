@@ -1,8 +1,6 @@
 # liblouis-env (Python)
 
-Cross-platform locator/installer for the [liblouis](https://liblouis.io) `lou_translate`
-binary, for Python subprocess use. See the [repo-level README](../README.md) for the
-Node.js and browser/WASM counterparts.
+Cross-platform locator/installer for the [liblouis](https://liblouis.io) `lou_translate`binary, for Python subprocess use. See the [repo-level README](../README.md) for the Node.js and browser/WASM counterparts.
 
 ## Usage
 
@@ -18,8 +16,7 @@ LOU_TRANSLATE = get_lou_translate()  # Path to a working lou_translate binary
 2. `lou_translate` already on `PATH`
 3. a platform-specific fetch/install, cached under a version-specific directory:
    - **Windows**: downloads the official `win64`/`win32` zip from the pinned
-     [liblouis GitHub release](https://github.com/liblouis/liblouis/releases) and extracts
-     `lou_translate.exe`
+     [liblouis GitHub release](https://github.com/liblouis/liblouis/releases) and extracts     `lou_translate.exe`
    - **macOS**: `brew install liblouis`
    - **Linux**: `apt-get install liblouis-bin` or `dnf install liblouis`
 
@@ -27,10 +24,7 @@ LOU_TRANSLATE = get_lou_translate()  # Path to a working lou_translate binary
 a fetch/install, for callers that don't want to risk a surprise network call or `sudo`
 prompt (the Python analog of the Node package's `resolveLouTranslate()`).
 
-The pinned version lives in `src/liblouis_env/version.py` — update it there to roll
-liblouis forward for the native/Python/Node side at once
-(`../js/packages/node/src/version.js` is kept in sync automatically by a test; the
-browser side tracks separately, see `../js/packages/web/README.md`).
+The pinned version lives in `src/liblouis_env/version.py` — update it there to roll liblouis forward for the native/Python/Node side at once (`../js/packages/node/src/version.js` is kept in sync automatically by a test; the browser side tracks separately, see `../js/packages/web/README.md`).
 
 ## Installing in a consuming repo
 

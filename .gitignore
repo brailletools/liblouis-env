@@ -5,3 +5,5 @@ dist/
 build/
 .pytest_cache/
 .ruff_cache/
+js/node_modules/
+js/packages/*/node_modules/

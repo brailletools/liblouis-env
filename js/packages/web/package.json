@@ -1,0 +1,31 @@
+{
+  "name": "@brailletools/liblouis-env-web",
+  "version": "0.1.0",
+  "description": "Versioned locator/fetcher for a liblouis browser (WASM/asm.js) build, for client-side use",
+  "type": "module",
+  "exports": {
+    ".": "./src/vendor.js"
+  },
+  "bin": {
+    "liblouis-fetch-web": "./bin/liblouis-fetch-web.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brailletools/liblouis-env"
+  },
+  "license": "MIT"
+}

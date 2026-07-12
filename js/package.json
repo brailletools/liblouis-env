@@ -1,0 +1,9 @@
+{
+  "name": "liblouis-env-js",
+  "private": true,
+  "description": "Workspace root for liblouis-env's Node.js and browser/WASM packages",
+  "scripts": {
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  }
+}

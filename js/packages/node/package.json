@@ -1,0 +1,31 @@
+{
+  "name": "@brailletools/liblouis-env",
+  "version": "0.1.0",
+  "description": "Cross-platform locator/installer for the liblouis lou_translate binary (Node.js)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "liblouis-fetch": "./bin/liblouis-fetch.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brailletools/liblouis-env"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,78 @@
+# @brailletools/liblouis-env-web
+
+Versioned locator/fetcher for a liblouis browser build (`easy-api.js` + a
+`build-*.js` + tables), for client-side/WASM use. Replaces hand-copying these
+files into a `static/`/`public/` directory.
+
+## Known limitation: version gap
+
+liblouis's own npm packages (`liblouis`/`liblouis-build`) have been unmaintained
+since 2017-2018 (~liblouis C 3.2.0-rc), years behind the `3.38.0` pinned for the
+native/Python side of `liblouis-env`. There is no npm-published, current browser
+build of liblouis — so this package doesn't depend on npm for any of it.
+
+Instead, both files are fetched directly from GitHub at a pinned commit:
+
+- the build file + tables come from
+  [`liblouis/js-build`](https://github.com/liblouis/js-build), which
+  continuously auto-builds liblouis **master** (not release tags) — see
+  `src/jsBuildVersion.js`
+- `easy-api.js` — hand-written JS glue, not compiled output — comes from
+  [`liblouis/liblouis-js`](https://github.com/liblouis/liblouis-js), which is
+  mostly dormant (last real commit 2020-12-11) but is still the canonical
+  source, and is pinned the same way — see `src/easyApiVersion.js`
+
+This means the browser build's underlying liblouis version will never exactly
+match `LIBLOUIS_VERSION` from the Python/Node native-binary side. Bump
+`JS_BUILD_REF`/`EASY_API_REF` periodically to track upstream.
+
+## Usage
+
+```
+npx liblouis-fetch-web ./static/liblouis
+```
+
+Writes `easy-api.js`, a build file, (if needed) a `tables/` directory, and a
+`manifest.json` describing what was written, into the destination directory.
+Consumers should read `manifest.json` at runtime rather than hardcoding
+filenames — the exact build variant (tables-embedded vs. no-tables) depends on
+what the pinned `js-build` commit happens to ship:
+
+```json
+{
+  "easyApiFile": "easy-api.js",
+  "buildFile": "build-no-tables-utf32.js",
+  "variant": "no-tables",
+  "tablesDir": "tables"
+}
+```
+
+When `variant` is `"no-tables"`, the consumer must call
+`asyncLiblouis.enableOnDemandTableLoading(tablesUrl)` on the `EasyApiAsync`
+instance before use (see `@brailletools/braille2latex`'s `configure()` and
+webeditor's `+page.svelte` for a working example).
+
+## Installing in a consuming repo (pnpm)
+
+```
+pnpm add -D "@brailletools/liblouis-env-web@github:brailletools/liblouis-env#path:/js/packages/web"
+```
+
+Then chain the fetch into your dev/build scripts (pnpm doesn't run
+`pre`/`post` lifecycle scripts by default, so call it explicitly):
+
+```json
+{
+  "scripts": {
+    "dev": "liblouis-fetch-web static/liblouis && vite dev",
+    "build": "liblouis-fetch-web static/liblouis && vite build"
+  }
+}
+```
+
+## Developing this package
+
+```
+pnpm install
+pnpm test
+```

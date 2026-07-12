@@ -554,7 +554,7 @@ packages:
 - pypi: ./
   name: liblouis-env
   version: 0.1.0
-  sha256: f306d9eea1bbd6a71c80e9998d6b6f84706c2fb3d483766fd11d73bfb6734897
+  sha256: c3ecfddc08f1814643525c21a27c3fc94c9fb4d922f726fdc9a6132c97f633bd
   requires_dist:
   - platformdirs>=4.0
   - requests>=2.32

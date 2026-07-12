@@ -16,10 +16,12 @@ liblouis-env = { path = ".", editable = true }
 pytest = "*"
 ruff = "*"
 
+[feature.dev.tasks]
+test = "pytest"
+lint = "ruff check ."
+
 [environments]
 dev = ["dev"]
 
 [tasks]
-test = "pytest"
-lint = "ruff check ."
 fetch = "liblouis-fetch"

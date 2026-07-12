@@ -52,6 +52,13 @@ When `variant` is `"no-tables"`, the consumer must call
 instance before use (see `@brailletools/braille2latex`'s `configure()` and
 webeditor's `+page.svelte` for a working example).
 
+> **Important:** `tablesUrl` (and any `liblouisTablesUrl` passed to
+> `configure()`) **must end with a trailing slash**, e.g.
+> `"https://example.com/static/liblouis/tables/"`. `easy-api.js` appends
+> table filenames with a plain string concatenation, not URL joining, so a
+> missing trailing slash will cause table loads to silently fail with a
+> wrong URL.
+
 ## Installing in a consuming repo (pnpm)
 
 ```

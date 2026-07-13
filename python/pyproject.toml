@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 liblouis-fetch = "liblouis_env.cli:main"
+liblouis-fetch-tables = "liblouis_env.cli:main_tables"
 
 [build-system]
 requires = ["hatchling"]

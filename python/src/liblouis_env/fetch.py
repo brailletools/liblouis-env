@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+import tarfile
 import zipfile
 from pathlib import Path
 
@@ -94,3 +95,33 @@ def ensure_installed() -> Path:
     if sys.platform.startswith("linux"):
         return _fetch_linux(cache_dir)
     raise LiblouisNotFoundError(f"Unsupported platform: {sys.platform}")
+
+
+def ensure_tables_installed() -> Path:
+    """Download and cache the liblouis translation tables directory.
+
+    Source is the pinned release's source tarball (the platform binary zips
+    don't reliably include the full table set), extracted once per version
+    under the same version-specific cache directory used for the binary.
+    """
+    cache_dir = _cache_dir()
+    tables_dir = cache_dir / "tables"
+    if tables_dir.exists():
+        return tables_dir
+
+    tarball = cache_dir / f"liblouis-{LIBLOUIS_VERSION}.tar.gz"
+    if not tarball.exists():
+        _download(f"{GITHUB_RELEASE_BASE}/liblouis-{LIBLOUIS_VERSION}.tar.gz", tarball)
+
+    with tarfile.open(tarball) as t:
+        t.extractall(cache_dir, filter="data")
+
+    extracted = cache_dir / f"liblouis-{LIBLOUIS_VERSION}" / "tables"
+    if not extracted.is_dir():
+        raise LiblouisNotFoundError(
+            f"tables/ not found inside {tarball} — release layout may have changed."
+        )
+    extracted.rename(tables_dir)
+    shutil.rmtree(cache_dir / f"liblouis-{LIBLOUIS_VERSION}", ignore_errors=True)
+    tarball.unlink()
+    return tables_dir

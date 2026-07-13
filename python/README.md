@@ -60,10 +60,11 @@ pip install "git+https://github.com/brailletools/liblouis-env.git@v0.1.0#subdire
 
 ```
 liblouis-fetch
+liblouis-fetch-tables
 ```
 
-Resolves/installs `lou_translate` and prints its path, without waiting for a consuming
-script's first import to trigger the network call.
+Resolves/installs `lou_translate` (or downloads the tables directory) and prints its path,
+without waiting for a consuming script's first import to trigger the network call.
 
 ## Developing this package
 

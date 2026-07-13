@@ -3,10 +3,7 @@ name: Check liblouis/js-build for updates
 # JS_BUILD_REF (js/packages/web/src/jsBuildVersion.js) is a hand-pinned commit
 # SHA from liblouis/js-build, a rolling auto-build repo with no releases.
 # This workflow only *detects* drift and files an issue - it deliberately does
-# not open a PR that bumps the pin automatically. A prior blind bump to
-# js-build's tip appeared to crash the WASM build in a real browser (see
-# jsBuildVersion.js history); that failure mode isn't caught by this repo's
-# Node-based test suite, so a human needs to bump the ref and manually verify
+# not open a PR that bumps the pin automatically. A human needs to bump the ref and manually verify
 # translateString/backTranslateString in a real browser before merging.
 
 on:

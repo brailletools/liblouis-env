@@ -1,0 +1,81 @@
+name: Check liblouis/js-build for updates
+
+# JS_BUILD_REF (js/packages/web/src/jsBuildVersion.js) is a hand-pinned commit
+# SHA from liblouis/js-build, a rolling auto-build repo with no releases.
+# This workflow only *detects* drift and files an issue - it deliberately does
+# not open a PR that bumps the pin automatically. A prior blind bump to
+# js-build's tip appeared to crash the WASM build in a real browser (see
+# jsBuildVersion.js history); that failure mode isn't caught by this repo's
+# Node-based test suite, so a human needs to bump the ref and manually verify
+# translateString/backTranslateString in a real browser before merging.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # weekly, Monday 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare pinned JS_BUILD_REF against upstream HEAD
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          PINNED_REF=$(grep -oE "JS_BUILD_REF = '[0-9a-f]+'" js/packages/web/src/jsBuildVersion.js | grep -oE '[0-9a-f]{40}')
+          if [ -z "$PINNED_REF" ]; then
+            echo "Could not extract JS_BUILD_REF from jsBuildVersion.js" >&2
+            exit 1
+          fi
+
+          UPSTREAM_SHA=$(curl -sf https://api.github.com/repos/liblouis/js-build/commits/HEAD | grep -m1 '"sha"' | grep -oE '[0-9a-f]{40}')
+          if [ -z "$UPSTREAM_SHA" ]; then
+            echo "Could not fetch upstream HEAD sha from GitHub API" >&2
+            exit 1
+          fi
+
+          echo "Pinned:   $PINNED_REF"
+          echo "Upstream: $UPSTREAM_SHA"
+
+          if [ "$PINNED_REF" = "$UPSTREAM_SHA" ]; then
+            echo "Up to date."
+            exit 0
+          fi
+
+          TITLE="liblouis/js-build has new commits (pinned JS_BUILD_REF is behind)"
+
+          EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "in:title \"$TITLE\"" --state open --json number --jq '.[0].number' || true)
+          if [ -n "$EXISTING" ]; then
+            echo "Issue #$EXISTING already open, skipping."
+            exit 0
+          fi
+
+          BODY_FILE=$(mktemp)
+          {
+            printf '%s\n' "liblouis/js-build's default branch (\`master\`) has advanced past the commit"
+            printf '%s\n' "currently pinned in \`js/packages/web/src/jsBuildVersion.js\`."
+            printf '\n'
+            printf -- '- Pinned \`JS_BUILD_REF\`: \`%s\`\n' "$PINNED_REF"
+            printf -- '- Upstream HEAD: \`%s\`\n' "$UPSTREAM_SHA"
+            printf -- '- Compare: https://github.com/liblouis/js-build/compare/%s...%s\n' "$PINNED_REF" "$UPSTREAM_SHA"
+            printf '\n'
+            printf '%s\n' "**Before bumping**, note the history in \`jsBuildVersion.js\`: a prior bump to"
+            printf '%s\n' "js-build's tip appeared to crash \`translateString\`/\`backTranslateString\`"
+            printf '%s\n' "with \`abort()\` inside WASM \`_free\` in a real browser. That turned out to be"
+            printf '%s\n' "an unrelated buffer-overflow bug in \`easy-api.js\` (now patched at fetch time"
+            printf '%s\n' "by \`patchEasyApi.js\`), not a problem with this build - but this repo's test"
+            printf '%s\n' "suite is Node-only and would not have caught that crash either way."
+            printf '\n'
+            printf '%s\n' "If you bump \`JS_BUILD_REF\`, manually exercise translate/back-translate in a"
+            printf '%s\n' "real browser before merging."
+          } > "$BODY_FILE"
+
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file "$BODY_FILE"

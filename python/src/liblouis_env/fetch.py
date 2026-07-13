@@ -35,6 +35,27 @@ def _find_binary(root: Path, name: str) -> Path | None:
     return matches[0] if matches else None
 
 
+def _safe_extractall(t: tarfile.TarFile, dest: Path) -> None:
+    # extractall's `filter` kwarg (PEP 706) is only guaranteed from Python
+    # 3.12; requires-python here is ">=3.9" and the security backports to
+    # 3.9.17/3.10.12/3.11.4 don't cover every patch release still in the
+    # >=3.9 range, so `filter="data"` can raise TypeError at runtime. Fall
+    # back to a manual extraction that rejects the same unsafe shapes
+    # (symlinks/hardlinks and paths escaping dest) the "data" filter would.
+    if hasattr(tarfile, "data_filter"):
+        t.extractall(dest, filter="data")
+        return
+
+    resolved_dest = dest.resolve()
+    for member in t.getmembers():
+        if member.issym() or member.islnk():
+            raise tarfile.TarError(f"refusing to extract symlink/hardlink member {member.name!r}")
+        member_path = (dest / member.name).resolve()
+        if member_path != resolved_dest and resolved_dest not in member_path.parents:
+            raise tarfile.TarError(f"refusing to extract {member.name!r}: path escapes {dest}")
+    t.extractall(dest)
+
+
 def _fetch_windows(cache_dir: Path) -> Path:
     arch = "win64" if sys.maxsize > 2**32 else "win32"
     zip_path = cache_dir / f"liblouis-{arch}.zip"
@@ -107,6 +128,11 @@ def ensure_tables_installed() -> Path:
     cache_dir = _cache_dir()
     tables_dir = cache_dir / "tables"
     if tables_dir.exists():
+        if not tables_dir.is_dir():
+            raise LiblouisNotFoundError(
+                f"{tables_dir} exists but is not a directory (corrupted cache?); "
+                "remove it and retry."
+            )
         return tables_dir
 
     tarball = cache_dir / f"liblouis-{LIBLOUIS_VERSION}.tar.gz"
@@ -114,7 +140,7 @@ def ensure_tables_installed() -> Path:
         _download(f"{GITHUB_RELEASE_BASE}/liblouis-{LIBLOUIS_VERSION}.tar.gz", tarball)
 
     with tarfile.open(tarball) as t:
-        t.extractall(cache_dir, filter="data")
+        _safe_extractall(t, cache_dir)
 
     extracted = cache_dir / f"liblouis-{LIBLOUIS_VERSION}" / "tables"
     if not extracted.is_dir():

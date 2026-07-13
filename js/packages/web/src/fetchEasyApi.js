@@ -3,9 +3,12 @@ import path from 'node:path';
 
 import { cacheDir } from './cacheDir.js';
 import { EASY_API_RAW_URL, EASY_API_REF } from './easyApiVersion.js';
+import { patchEasyApi } from './patchEasyApi.js';
 
 /**
- * Download and cache the pinned easy-api.js from liblouis/liblouis-js.
+ * Download and cache the pinned easy-api.js from liblouis/liblouis-js, with
+ * the translateString/backTranslateString buffer-overflow fix (see
+ * patchEasyApi.js) applied before caching.
  * Returns the path to the cached file on disk.
  */
 export async function fetchEasyApi() {
@@ -17,7 +20,7 @@ export async function fetchEasyApi() {
     if (!res.ok) {
         throw new Error(`Failed to download ${EASY_API_RAW_URL}: HTTP ${res.status}`);
     }
-    const buf = Buffer.from(await res.arrayBuffer());
-    fs.writeFileSync(dest, buf);
+    const source = Buffer.from(await res.arrayBuffer()).toString('utf8');
+    fs.writeFileSync(dest, patchEasyApi(source));
     return dest;
 }

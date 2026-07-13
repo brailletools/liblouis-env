@@ -1,0 +1,75 @@
+name: Check liblouis for new releases
+
+# LIBLOUIS_VERSION (python/src/liblouis_env/version.py) is a hand-pinned
+# release tag that both the lou_translate binary fetch and the tables fetch
+# key off of. This workflow only *detects* drift and files an issue - it
+# deliberately does not open a PR that bumps the pin automatically, since a
+# human should verify the new release (run the test suites, check for table
+# format changes) before rolling it forward.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # weekly, Monday 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare pinned LIBLOUIS_VERSION against latest upstream release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          PINNED_VERSION=$(grep -oE 'LIBLOUIS_VERSION = "[0-9.]+"' python/src/liblouis_env/version.py | grep -oE '[0-9.]+')
+          if [ -z "$PINNED_VERSION" ]; then
+            echo "Could not extract LIBLOUIS_VERSION from version.py" >&2
+            exit 1
+          fi
+
+          LATEST_VERSION=$(gh api repos/liblouis/liblouis/releases/latest --jq '.tag_name' | sed 's/^v//')
+          if [ -z "$LATEST_VERSION" ]; then
+            echo "Could not fetch latest release tag from GitHub API" >&2
+            exit 1
+          fi
+
+          echo "Pinned:  $PINNED_VERSION"
+          echo "Latest:  $LATEST_VERSION"
+
+          if [ "$PINNED_VERSION" = "$LATEST_VERSION" ]; then
+            echo "Up to date."
+            exit 0
+          fi
+
+          TITLE="liblouis has a new release (pinned LIBLOUIS_VERSION is behind)"
+
+          EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "in:title \"$TITLE\"" --state open --json number --jq '.[0].number' || true)
+          if [ -n "$EXISTING" ]; then
+            echo "Issue #$EXISTING already open, skipping."
+            exit 0
+          fi
+
+          BODY_FILE=$(mktemp)
+          {
+            printf '%s\n' "liblouis has a newer release than what's pinned in"
+            printf '%s\n' "\`python/src/liblouis_env/version.py\`."
+            printf '\n'
+            printf -- '- Pinned \`LIBLOUIS_VERSION\`: \`%s\`\n' "$PINNED_VERSION"
+            printf -- '- Latest release: \`%s\`\n' "$LATEST_VERSION"
+            printf -- '- Release notes: https://github.com/liblouis/liblouis/releases/tag/v%s\n' "$LATEST_VERSION"
+            printf '\n'
+            printf '%s\n' "Bumping this pin affects the lou_translate binary fetch (all platforms)"
+            printf '%s\n' "and the tables fetch (\`ensure_tables_installed()\` in \`fetch.py\`) at once."
+            printf '%s\n' "Run \`pixi run test\` in \`python/\` after bumping, and check the release notes"
+            printf '%s\n' "for table format or opcode changes that downstream consumers (e.g. louis-rs)"
+            printf '%s\n' "might need to handle."
+          } > "$BODY_FILE"
+
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file "$BODY_FILE"

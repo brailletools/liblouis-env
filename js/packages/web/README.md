@@ -26,6 +26,26 @@ This means the browser build's underlying liblouis version will never exactly
 match `LIBLOUIS_VERSION` from the Python/Node native-binary side. Bump
 `JS_BUILD_REF`/`EASY_API_REF` periodically to track upstream.
 
+### `easy-api.js` is patched, not vendored verbatim
+
+The pinned `easy-api.js` sizes its output buffer to exactly the input's byte
+length, in both `translateString` and `backTranslateString`. liblouis output
+routinely needs more room than the input (numeric/capital indicators,
+multi-cell punctuation, grade-2 contraction back-translation, etc.), so the
+unmodified file silently overflows the WASM heap for a large fraction of real
+inputs — corrupting adjacent allocations and crashing later, typically inside
+an unrelated `_free()` call. Since `liblouis-js` is dormant, this bug is
+presumably present at every commit, so bumping `EASY_API_REF` alone won't fix
+it.
+
+`fetchEasyApi()` (`src/fetchEasyApi.js`) applies a fix — see
+`src/patchEasyApi.js` — to the downloaded source before caching/vendoring it,
+giving the output buffer a generous fixed-minimum margin instead. If
+`EASY_API_REF` is ever bumped and `patchEasyApi`'s string match no longer
+finds the buggy block, it throws rather than silently vendoring the
+unpatched, unsafe file — update `src/patchEasyApi.js` to match the new
+upstream shape when that happens.
+
 ## Usage
 
 ```
@@ -51,6 +71,13 @@ When `variant` is `"no-tables"`, the consumer must call
 `asyncLiblouis.enableOnDemandTableLoading(tablesUrl)` on the `EasyApiAsync`
 instance before use (see `@brailletools/braille2latex`'s `configure()` and
 webeditor's `+page.svelte` for a working example).
+
+> **Important:** `tablesUrl` (and any `liblouisTablesUrl` passed to
+> `configure()`) **must end with a trailing slash**, e.g.
+> `"https://example.com/static/liblouis/tables/"`. `easy-api.js` appends
+> table filenames with a plain string concatenation, not URL joining, so a
+> missing trailing slash will cause table loads to silently fail with a
+> wrong URL.
 
 ## Installing in a consuming repo (pnpm)
 

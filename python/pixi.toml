@@ -25,3 +25,4 @@ dev = ["dev"]
 
 [tasks]
 fetch = "liblouis-fetch"
+fetch-tables = "liblouis-fetch-tables"

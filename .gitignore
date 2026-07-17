@@ -7,3 +7,4 @@ build/
 .ruff_cache/
 js/node_modules/
 js/packages/*/node_modules/
+CLAUDE.local.md
